@@ -1,0 +1,83 @@
+---
+title: "election results"
+author: "Kuba"
+date: "9/9/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+* **The packages to be used**
+``` {r load packages}
+library("data.table"); library("dplyr")
+```
+
+* **function for calculating the distribution of seats**
+```{r distr}
+distr <- function() {
+  if(sum(votes)< N/2) {stop('less than 50%, reelection')} else
+                {annex <- c(1:(5*19))}
+        names(annex) <- rep(c("KommRossii","KPRF","LDPR","SR","ER"),19)
+        mip <- 0.05
+        map <- 0.95
+        nmin <- round(N*mip)
+        nmax <- round(N*map)
+        annex[1:5] <- sapply(votes, function(x) ifelse (x %in% (nmin:nmax), x/2, 0))
+        for(i in 3:20) {annex[(5*(i-2)+1):(5*(i-1))] <- round(votes/i, digits = 6)}
+        distr <- tibble(party=names(annex),annex=annex)
+        distr <- tibble(party=names(annex),annex=annex) %>%
+                arrange(desc(annex)) %>% 
+                slice(1:20) %>% group_by(party) %>% summarise(seats=n()) %>%
+                arrange(desc(seats))
+        distr
+}
+```
+
+* **generating a random example**
+```{r random}
+## N - number of voters
+example <- function(N) {
+        r <- runif(5)
+        r <- sort(r)
+        r[5] <- (r[5]-r[4])
+        r[4] <- (r[4]-r[3])
+        r[3] <- (r[3]-r[2])
+        r[2] <- (r[2]-r[1])
+        KommRossii <- round(N*r[1])
+        KPRF <- round(N*r[2])
+        LDPR <- round(N*r[3])
+        SR <- round(N*r[4])
+        ER <- round(N*r[5])
+votes <- c(KommRossii,KPRF,LDPR,SR,ER)
+names(votes) <- c("KommRossii","KPRF","LDPR","SR","ER")
+votes
+}
+```
+
+## random example, voters turnout = 100%
+
+```{r rex}
+N <- 95043 ## number of voters
+votes <- example(N)
+print(votes)
+result <- distr()
+result
+```
+
+## example with a given protocol result
+
+```{r given}
+## turnout: 40221, Kommunists: 2300, KPRF: 13420, LDPR: 7679, SR: 500 ,ER: 16322
+N <- 40221
+KommRossii <- 2300
+KPRF <- 13240
+LDPR <- 7679
+SR <- 500
+ER <- 16322
+votes <- c(KommRossii,KPRF,LDPR,SR,ER)
+result <- distr()
+result
+```
